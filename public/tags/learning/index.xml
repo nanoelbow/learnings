@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><generator uri="https://gohugo.io/" version="0.160.1">Hugo</generator><title>Learning on Learnings</title><subtitle>Technical notes and things I've learned</subtitle><link href="https://nanoelbow.github.io/learnings/tags/learning/" rel="alternate" type="text/html" title="html"/><link href="https://nanoelbow.github.io/learnings/tags/learning/index.xml" rel="alternate" type="application/rss+xml" title="rss"/><updated>2026-04-09T13:48:04-07:00</updated><id>https://nanoelbow.github.io/learnings/tags/learning/</id><entry><title>Atomic File Writes</title><link href="https://nanoelbow.github.io/learnings/posts/atomic-file-writes/" rel="alternate" type="text/html" hreflang="en"/><id>https://nanoelbow.github.io/learnings/posts/atomic-file-writes/</id><published>2026-04-09T00:00:00+00:00</published><updated>2026-04-09T00:00:00+00:00</updated><content type="html">
+&lt;p&gt;&lt;strong&gt;Date:&lt;/strong&gt; 2026-04-09
+&lt;strong&gt;Context:&lt;/strong&gt; nanobot session persistence bug&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="problem"
+&gt;
+Problem
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/atomic-file-writes/#problem" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Problem" href="#problem"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;Writing files with &lt;code&gt;open(path, &amp;quot;w&amp;quot;)&lt;/code&gt; is &lt;strong&gt;not atomic&lt;/strong&gt;. The OS truncates the file first, then writes content. If the process is killed mid-write (e.g. SIGKILL, crash), the file is left truncated — all data lost.&lt;/p&gt;
+&lt;p&gt;This caused nanobot&amp;rsquo;s &lt;code&gt;SessionManager.save()&lt;/code&gt; to corrupt session JSONL files on gateway kill, losing all conversation history.&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="solution-temp-file--atomic-rename"
+&gt;
+Solution: Temp File + Atomic Rename
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/atomic-file-writes/#solution-temp-file--atomic-rename" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Solution: Temp File &amp;#43; Atomic Rename" href="#solution-temp-file--atomic-rename"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 3
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 4
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 5
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 6
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 7
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 8
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 9
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;10
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;11
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;import&lt;/span&gt; os&lt;span style="color:#ff79c6"&gt;,&lt;/span&gt; tempfile
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fd, tmp_path &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; tempfile&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;mkstemp(&lt;span style="color:#8be9fd;font-style:italic"&gt;dir&lt;/span&gt;&lt;span style="color:#ff79c6"&gt;=&lt;/span&gt;target_dir, suffix&lt;span style="color:#ff79c6"&gt;=&lt;/span&gt;&lt;span style="color:#f1fa8c"&gt;&amp;#34;.tmp&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;with&lt;/span&gt; os&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;fdopen(fd, &lt;span style="color:#f1fa8c"&gt;&amp;#34;w&amp;#34;&lt;/span&gt;) &lt;span style="color:#ff79c6"&gt;as&lt;/span&gt; f:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; f&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;write(data)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; f&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;flush()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; os&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;fsync(f&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;fileno()) &lt;span style="color:#6272a4"&gt;# ensure data hits disk&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; os&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;replace(tmp_path, target_path) &lt;span style="color:#6272a4"&gt;# atomic on POSIX&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;except&lt;/span&gt; BaseException:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; os&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;unlink(tmp_path) &lt;span style="color:#6272a4"&gt;# cleanup on failure&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;raise&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="key-points"
+&gt;
+Key Points
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/atomic-file-writes/#key-points" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Key Points" href="#key-points"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;os.replace()&lt;/code&gt; is atomic on the same filesystem — either the old file exists OR the new file exists, never a half-written state&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;tempfile.mkstemp(dir=...)&lt;/code&gt; — use same directory to guarantee same filesystem&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;os.fsync()&lt;/code&gt; ensures data is flushed to disk before rename&lt;/li&gt;
+&lt;li&gt;On crash: old file stays intact, temp file is orphaned garbage&lt;/li&gt;
+&lt;li&gt;On success: old file is replaced atomically&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="when-to-use"
+&gt;
+When to Use
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/atomic-file-writes/#when-to-use" class="gblog-post__anchor clip flex align-center" aria-label="Anchor When to Use" href="#when-to-use"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;Session/data files that are written periodically&lt;/li&gt;
+&lt;li&gt;Any file where partial writes = data loss&lt;/li&gt;
+&lt;li&gt;Config files that might be written during signal handling&lt;/li&gt;
+&lt;/ul&gt;</content><category scheme="https://nanoelbow.github.io/learnings/tags/learning" term="learning" label="learning"/></entry><entry><title>launchd Service Management</title><link href="https://nanoelbow.github.io/learnings/posts/launchd-service-management/" rel="alternate" type="text/html" hreflang="en"/><id>https://nanoelbow.github.io/learnings/posts/launchd-service-management/</id><published>2026-04-09T00:00:00+00:00</published><updated>2026-04-09T00:00:00+00:00</updated><content type="html">
+&lt;p&gt;&lt;strong&gt;Date:&lt;/strong&gt; 2026-04-09
+&lt;strong&gt;Context:&lt;/strong&gt; Auto-restart nanobot gateway on crash&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="what-is-launchd"
+&gt;
+What is launchd?
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/launchd-service-management/#what-is-launchd" class="gblog-post__anchor clip flex align-center" aria-label="Anchor What is launchd?" href="#what-is-launchd"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;macOS&amp;rsquo;s native service manager — replaces cron, init.d, supervisord on macOS. It&amp;rsquo;s PID 1, always running, manages all system and user services.&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="user-agents-vs-system-daemons"
+&gt;
+User Agents vs System Daemons
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/launchd-service-management/#user-agents-vs-system-daemons" class="gblog-post__anchor clip flex align-center" aria-label="Anchor User Agents vs System Daemons" href="#user-agents-vs-system-daemons"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;User agents&lt;/strong&gt;: &lt;code&gt;~/Library/LaunchAgents/&lt;/code&gt; — runs as your user, starts on login&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;System daemons&lt;/strong&gt;: &lt;code&gt;/Library/LaunchDaemons/&lt;/code&gt; — runs as root, starts on boot&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="key-plist-keys"
+&gt;
+Key plist Keys
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/launchd-service-management/#key-plist-keys" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Key plist Keys" href="#key-plist-keys"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 3
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 4
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 5
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 6
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 7
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 8
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 9
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;10
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;11
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;12
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;13
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;14
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;15
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;16
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-xml" data-lang="xml"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;key&amp;gt;&lt;/span&gt;KeepAlive&lt;span style="color:#ff79c6"&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;true/&amp;gt;&lt;/span&gt; &lt;span style="color:#6272a4"&gt;&amp;lt;!-- auto-restart on crash --&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;key&amp;gt;&lt;/span&gt;RunAtLoad&lt;span style="color:#ff79c6"&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;true/&amp;gt;&lt;/span&gt; &lt;span style="color:#6272a4"&gt;&amp;lt;!-- start when loaded --&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;key&amp;gt;&lt;/span&gt;ProgramArguments&lt;span style="color:#ff79c6"&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;array&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;&amp;lt;string&amp;gt;&lt;/span&gt;/bin/bash&lt;span style="color:#ff79c6"&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;&amp;lt;string&amp;gt;&lt;/span&gt;/path/to/wrapper.sh&lt;span style="color:#ff79c6"&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;/array&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;key&amp;gt;&lt;/span&gt;StandardOutPath&lt;span style="color:#ff79c6"&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;string&amp;gt;&lt;/span&gt;/path/to/stdout.log&lt;span style="color:#ff79c6"&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;key&amp;gt;&lt;/span&gt;StandardErrorPath&lt;span style="color:#ff79c6"&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;&amp;lt;string&amp;gt;&lt;/span&gt;/path/to/stderr.log&lt;span style="color:#ff79c6"&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="gotcha-environment-variables"
+&gt;
+Gotcha: Environment Variables
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/launchd-service-management/#gotcha-environment-variables" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Gotcha: Environment Variables" href="#gotcha-environment-variables"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;launchd does &lt;strong&gt;NOT&lt;/strong&gt; source &lt;code&gt;.zshrc&lt;/code&gt;, &lt;code&gt;.bashrc&lt;/code&gt;, or &lt;code&gt;.profile&lt;/code&gt;. Env vars from those files are unavailable.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Fix&lt;/strong&gt;: Use a wrapper script:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;#!/bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#8be9fd;font-style:italic"&gt;source&lt;/span&gt; ~/.zshrc 2&amp;gt;/dev/null
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#8be9fd;font-style:italic"&gt;exec&lt;/span&gt; /path/to/actual/binary
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="management-commands"
+&gt;
+Management Commands
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/launchd-service-management/#management-commands" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Management Commands" href="#management-commands"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;3
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;launchctl load &amp;lt;plist&amp;gt; &lt;span style="color:#6272a4"&gt;# start + enable&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;launchctl unload &amp;lt;plist&amp;gt; &lt;span style="color:#6272a4"&gt;# stop + disable&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;launchctl list | grep name &lt;span style="color:#6272a4"&gt;# check PID and exit code&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;launchctl remove &amp;lt;label&amp;gt; &lt;span style="color:#6272a4"&gt;# remove registration&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;unload&lt;/code&gt; = off switch (won&amp;rsquo;t restart)&lt;/li&gt;
+&lt;li&gt;simple &lt;code&gt;kill&lt;/code&gt; = bounce (KeepAlive restarts it)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="debugging"
+&gt;
+Debugging
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/launchd-service-management/#debugging" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Debugging" href="#debugging"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;3
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;4
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;5
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;6
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;7
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#6272a4"&gt;# Check exit code (nonzero = crashed)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;launchctl list | grep label
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#6272a4"&gt;# -&amp;gt; PID EXIT LABEL&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#6272a4"&gt;# -&amp;gt; 27214 0 com.nanobot.gateway (running)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#6272a4"&gt;# -&amp;gt; - 1 com.nanobot.gateway (crashed, exit code 1)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#6272a4"&gt;# View logs&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;tail -f ~/.nanobot/logs/gateway.stderr.log
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;</content><category scheme="https://nanoelbow.github.io/learnings/tags/learning" term="learning" label="learning"/></entry><entry><title>LLM Model Fallback Chains</title><link href="https://nanoelbow.github.io/learnings/posts/llm-model-fallback-chains/" rel="alternate" type="text/html" hreflang="en"/><id>https://nanoelbow.github.io/learnings/posts/llm-model-fallback-chains/</id><published>2026-04-09T00:00:00+00:00</published><updated>2026-04-09T00:00:00+00:00</updated><content type="html">
+&lt;p&gt;&lt;strong&gt;Date:&lt;/strong&gt; 2026-04-09
+&lt;strong&gt;Context:&lt;/strong&gt; nanobot model fallback when GLM-5.1 overloads&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="problem"
+&gt;
+Problem
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/llm-model-fallback-chains/#problem" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Problem" href="#problem"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;LLM providers have rate limits, outages, and overload errors. If your primary model is unavailable, the entire request fails — user gets nothing.&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="solution-ordered-fallback-list"
+&gt;
+Solution: Ordered Fallback List
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/llm-model-fallback-chains/#solution-ordered-fallback-list" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Solution: Ordered Fallback List" href="#solution-ordered-fallback-list"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;Configure a list of models to try in order when the primary fails:&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;primary: glm-5.1
+fallback: [glm-5-turbo, glm-4.5-air]
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;On error from primary → try glm-5-turbo → try glm-4.5-air → return last error if all fail.&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="implementation-pattern"
+&gt;
+Implementation Pattern
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/llm-model-fallback-chains/#implementation-pattern" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Implementation Pattern" href="#implementation-pattern"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 3
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 4
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 5
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 6
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 7
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 8
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 9
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;10
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;11
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;12
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;13
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;async&lt;/span&gt; &lt;span style="color:#ff79c6"&gt;def&lt;/span&gt; &lt;span style="color:#50fa7b"&gt;_run&lt;/span&gt;(&lt;span style="font-style:italic"&gt;self&lt;/span&gt;, spec, messages, &lt;span style="color:#ff79c6"&gt;...&lt;/span&gt;):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; response &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; &lt;span style="color:#ff79c6"&gt;await&lt;/span&gt; &lt;span style="font-style:italic"&gt;self&lt;/span&gt;&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;_call_provider(spec, messages, model&lt;span style="color:#ff79c6"&gt;=&lt;/span&gt;spec&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;model)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;if&lt;/span&gt; response&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;finish_reason &lt;span style="color:#ff79c6"&gt;==&lt;/span&gt; &lt;span style="color:#f1fa8c"&gt;&amp;#34;error&amp;#34;&lt;/span&gt; &lt;span style="color:#ff79c6"&gt;and&lt;/span&gt; spec&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;model_fallback:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;for&lt;/span&gt; fallback &lt;span style="color:#ff79c6"&gt;in&lt;/span&gt; spec&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;model_fallback:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;if&lt;/span&gt; fallback &lt;span style="color:#ff79c6"&gt;==&lt;/span&gt; spec&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;model:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;continue&lt;/span&gt; &lt;span style="color:#6272a4"&gt;# skip duplicates&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fallback_resp &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; &lt;span style="color:#ff79c6"&gt;await&lt;/span&gt; &lt;span style="font-style:italic"&gt;self&lt;/span&gt;&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;_call_provider(spec, messages, model&lt;span style="color:#ff79c6"&gt;=&lt;/span&gt;fallback)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;if&lt;/span&gt; fallback_resp&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;finish_reason &lt;span style="color:#ff79c6"&gt;!=&lt;/span&gt; &lt;span style="color:#f1fa8c"&gt;&amp;#34;error&amp;#34;&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;return&lt;/span&gt; fallback_resp
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; response &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; fallback_resp &lt;span style="color:#6272a4"&gt;# keep last error&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;return&lt;/span&gt; response
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="design-decisions"
+&gt;
+Design Decisions
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/llm-model-fallback-chains/#design-decisions" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Design Decisions" href="#design-decisions"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Same provider, different models&lt;/strong&gt; — simpler than cross-provider fallback (same API key, same auth)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Skip primary if duplicated&lt;/strong&gt; in fallback list (avoid retrying same failed model)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Return last error&lt;/strong&gt; if all models fail — gives user a real error message, not silence&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Plumb through all layers&lt;/strong&gt; — config schema → app → loop → runner → CLI, so config drives behavior everywhere&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Config-driven&lt;/strong&gt; — &lt;code&gt;model_fallback: [&amp;quot;glm-5-turbo&amp;quot;, &amp;quot;glm-4.5-air&amp;quot;]&lt;/code&gt; in config, not hardcoded&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="layer-plumbing"
+&gt;
+Layer Plumbing
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/llm-model-fallback-chains/#layer-plumbing" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Layer Plumbing" href="#layer-plumbing"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;config.json → schema.py (AgentDefaults.model_fallback)
+→ nanobot.py (passes to AgentLoop)
+→ loop.py (stores, passes to AgentRunSpec)
+→ runner.py (AgentRunSpec.model_fallback, tries on error)
+→ commands.py (serve/gateway/agent all pass through)
+&lt;/code&gt;&lt;/pre&gt;</content><category scheme="https://nanoelbow.github.io/learnings/tags/learning" term="learning" label="learning"/></entry><entry><title>Resilient JSONL Loading</title><link href="https://nanoelbow.github.io/learnings/posts/resilient-jsonl-loading/" rel="alternate" type="text/html" hreflang="en"/><id>https://nanoelbow.github.io/learnings/posts/resilient-jsonl-loading/</id><published>2026-04-09T00:00:00+00:00</published><updated>2026-04-09T00:00:00+00:00</updated><content type="html">
+&lt;p&gt;&lt;strong&gt;Date:&lt;/strong&gt; 2026-04-09
+&lt;strong&gt;Context:&lt;/strong&gt; nanobot session recovery after corruption&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="problem"
+&gt;
+Problem
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/resilient-jsonl-loading/#problem" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Problem" href="#problem"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;When loading a JSONL (JSON Lines) file, a single corrupted line causes &lt;code&gt;json.loads()&lt;/code&gt; to throw and the entire load fails — returning &lt;code&gt;None&lt;/code&gt; / empty state, losing all valid data.&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="solution-skip-bad-lines"
+&gt;
+Solution: Skip Bad Lines
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/resilient-jsonl-loading/#solution-skip-bad-lines" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Solution: Skip Bad Lines" href="#solution-skip-bad-lines"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 3
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 4
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 5
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 6
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 7
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 8
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt; 9
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;10
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;11
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;12
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;13
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;14
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;15
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;16
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;messages &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; []
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;bad_lines &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; &lt;span style="color:#bd93f9"&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;for&lt;/span&gt; line &lt;span style="color:#ff79c6"&gt;in&lt;/span&gt; file:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; line &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; line&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;strip()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;if&lt;/span&gt; &lt;span style="color:#ff79c6"&gt;not&lt;/span&gt; line:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;continue&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; data &lt;span style="color:#ff79c6"&gt;=&lt;/span&gt; json&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;loads(line)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;except&lt;/span&gt; json&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;JSONDecodeError:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; bad_lines &lt;span style="color:#ff79c6"&gt;+=&lt;/span&gt; &lt;span style="color:#bd93f9"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;continue&lt;/span&gt; &lt;span style="color:#6272a4"&gt;# skip, don&amp;#39;t abort&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; messages&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;append(data)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ff79c6"&gt;if&lt;/span&gt; bad_lines:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger&lt;span style="color:#ff79c6"&gt;.&lt;/span&gt;warning(&lt;span style="color:#f1fa8c"&gt;&amp;#34;Recovered &lt;/span&gt;&lt;span style="color:#f1fa8c"&gt;{}&lt;/span&gt;&lt;span style="color:#f1fa8c"&gt; messages, &lt;/span&gt;&lt;span style="color:#f1fa8c"&gt;{}&lt;/span&gt;&lt;span style="color:#f1fa8c"&gt; corrupted lines&amp;#34;&lt;/span&gt;, &lt;span style="color:#8be9fd;font-style:italic"&gt;len&lt;/span&gt;(messages), bad_lines)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="key-points"
+&gt;
+Key Points
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/resilient-jsonl-loading/#key-points" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Key Points" href="#key-points"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;JSONL is append-only by nature — early lines are older, later lines are newer&lt;/li&gt;
+&lt;li&gt;If corruption happens at the end (most common — killed mid-write), all older data is still valid&lt;/li&gt;
+&lt;li&gt;Even if corruption is in the middle, surrounding data is recoverable&lt;/li&gt;
+&lt;li&gt;Return &lt;code&gt;None&lt;/code&gt; only if there&amp;rsquo;s zero recoverable data (no messages AND no metadata)&lt;/li&gt;
+&lt;li&gt;Log corruption count for monitoring — frequent corruption signals a deeper write bug&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="pattern-defense-in-depth"
+&gt;
+Pattern: Defense in Depth
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/resilient-jsonl-loading/#pattern-defense-in-depth" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Pattern: Defense in Depth" href="#pattern-defense-in-depth"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;Pair with atomic writes for full protection:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Atomic writes&lt;/strong&gt; prevent corruption in the first place&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Resilient loading&lt;/strong&gt; recovers data if corruption somehow still occurs&lt;/li&gt;
+&lt;/ol&gt;</content><category scheme="https://nanoelbow.github.io/learnings/tags/learning" term="learning" label="learning"/></entry><entry><title>SSRF Whitelisting Localhost</title><link href="https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/" rel="alternate" type="text/html" hreflang="en"/><id>https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/</id><published>2026-04-08T00:00:00+00:00</published><updated>2026-04-08T00:00:00+00:00</updated><content type="html">
+&lt;p&gt;&lt;strong&gt;Date&lt;/strong&gt;: 2026-04-08
+&lt;strong&gt;Context&lt;/strong&gt;: nanobot agent, rederive project&lt;/p&gt;
+&lt;hr&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="what-is-ssrf"
+&gt;
+What is SSRF?
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/#what-is-ssrf" class="gblog-post__anchor clip flex align-center" aria-label="Anchor What is SSRF?" href="#what-is-ssrf"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;Server-Side Request Forgery. An attacker tricks a server into making HTTP requests to internal resources the attacker can&amp;rsquo;t reach directly. In an AI agent context, a malicious prompt could instruct the agent to fetch &lt;code&gt;http://169.254.169.254/latest/meta-data/&lt;/code&gt; (AWS credentials) or &lt;code&gt;http://localhost:6379/&lt;/code&gt; (Redis).&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="why-nanobot-has-ssrf-protection"
+&gt;
+Why nanobot has SSRF protection
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/#why-nanobot-has-ssrf-protection" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Why nanobot has SSRF protection" href="#why-nanobot-has-ssrf-protection"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;nanobot&amp;rsquo;s &lt;code&gt;web_fetch&lt;/code&gt; and &lt;code&gt;web_search&lt;/code&gt; tools make outbound HTTP requests. Without a guard, any URL — including private/internal addresses — would be fair game. The guard in &lt;code&gt;nanobot/security/network.py&lt;/code&gt; blocks:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;127.0.0.0/8&lt;/code&gt; — IPv4 loopback&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;::1/128&lt;/code&gt; — IPv6 loopback&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;10.0.0.0/8&lt;/code&gt; — private class A&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;172.16.0.0/12&lt;/code&gt; — private class B&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;192.168.0.0/16&lt;/code&gt; — private class C&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;169.254.0.0/16&lt;/code&gt; — link-local (cloud metadata)&lt;/li&gt;
+&lt;li&gt;Plus multicast, reserved ranges&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;It resolves the hostname via DNS first, then checks the resulting IP against blocked networks.&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="why-we-whitelisted-localhost"
+&gt;
+Why we whitelisted localhost
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/#why-we-whitelisted-localhost" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Why we whitelisted localhost" href="#why-we-whitelisted-localhost"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;On a single-user dev machine, blocking localhost prevents the agent from testing its own services. We run rederive locally (MCP :8000, Agent :8080, Frontend :3000) and need &lt;code&gt;web_fetch&lt;/code&gt; to reach them.&lt;/p&gt;
+&lt;p&gt;This is safe because:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Single-user machine&lt;/strong&gt; — no multi-tenant risk. The agent can only hit services the user themselves is running.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Dev-only config&lt;/strong&gt; — &lt;code&gt;ssrfWhitelist&lt;/code&gt; is in our local &lt;code&gt;config.json&lt;/code&gt;, not deployed. Production nanobot instances would not have this.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Scoped to loopback only&lt;/strong&gt; — we whitelisted &lt;code&gt;127.0.0.0/8&lt;/code&gt; and &lt;code&gt;::1/128&lt;/code&gt;, not broader private ranges. The agent still can&amp;rsquo;t reach &lt;code&gt;192.168.x.x&lt;/code&gt; or cloud metadata endpoints.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="the-ipv6-gotcha"
+&gt;
+The IPv6 gotcha
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/#the-ipv6-gotcha" class="gblog-post__anchor clip flex align-center" aria-label="Anchor The IPv6 gotcha" href="#the-ipv6-gotcha"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;macOS resolves &lt;code&gt;localhost&lt;/code&gt; to &lt;code&gt;::1&lt;/code&gt; (IPv6) first, not &lt;code&gt;127.0.0.1&lt;/code&gt;. Initially we only whitelisted &lt;code&gt;127.0.0.0/8&lt;/code&gt; and it still blocked. Had to add &lt;code&gt;::1/128&lt;/code&gt; as well. Lesson: &lt;strong&gt;always whitelist both IPv4 and IPv6 loopback&lt;/strong&gt;.&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="config"
+&gt;
+Config
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/#config" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Config" href="#config"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;
+&lt;table style="border-spacing:0;padding:0;margin:0;border:0;"&gt;&lt;tr&gt;&lt;td style="vertical-align:top;padding:0;margin:0;border:0;"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;1
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;2
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;3
+&lt;/span&gt;&lt;span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%"&gt;
+&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#6272a4"&gt;// ~/.nanobot/config.json → tools.ssrfWhitelist
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#ff79c6"&gt;&amp;#34;ssrfWhitelist&amp;#34;&lt;/span&gt;: [&lt;span style="color:#f1fa8c"&gt;&amp;#34;127.0.0.0/8&amp;#34;&lt;/span&gt;, &lt;span style="color:#f1fa8c"&gt;&amp;#34;::1/128&amp;#34;&lt;/span&gt;]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Requires gateway restart to take effect (loaded at startup via &lt;code&gt;_apply_ssrf_whitelist()&lt;/code&gt;).&lt;/p&gt;
+&lt;div class="flex align-center gblog-post__anchorwrap"&gt;
+&lt;h2 id="key-takeaway"
+&gt;
+Key takeaway
+&lt;/h2&gt;
+&lt;a data-clipboard-text="https://nanoelbow.github.io/learnings/posts/ssrf-whitelisting-localhost/#key-takeaway" class="gblog-post__anchor clip flex align-center" aria-label="Anchor Key takeaway" href="#key-takeaway"&gt;
+&lt;svg class="gblog-icon gblog_link"&gt;&lt;use xlink:href="#gblog_link"&gt;&lt;/use&gt;&lt;/svg&gt;
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;p&gt;SSRF protection exists because agents are prompt-driven — they follow instructions that could come from untrusted sources. Whitelisting is fine when you control the machine and scope tightly. Never whitelist broader private ranges or cloud metadata addresses.&lt;/p&gt;</content><category scheme="https://nanoelbow.github.io/learnings/tags/learning" term="learning" label="learning"/></entry></feed>
