@@ -56,6 +56,7 @@ main {
     margin: 2rem auto;
     padding: 0 1.5rem;
     flex: 1;
+    overflow-wrap: break-word;
 }
 
 .subtitle {
@@ -118,6 +119,7 @@ code {
     border-radius: 4px;
     font-size: 0.9em;
     font-family: 'SF Mono', 'Fira Code', monospace;
+    word-break: break-all;
 }
 
 pre {
@@ -127,9 +129,16 @@ pre {
     padding: 1rem;
     overflow-x: auto;
     margin-bottom: 1rem;
+    max-width: 100%;
 }
 
-pre code { background: none; padding: 0; }
+pre code {
+    background: none;
+    padding: 0;
+    white-space: pre;
+    word-break: normal;
+    overflow-wrap: normal;
+}
 
 blockquote {
     border-left: 3px solid var(--accent);

@@ -9,4 +9,4 @@ title = 'Learnings'
 
 [markup.highlight]
   style = "dracula"
-  lineNos = true
+  lineNos = false
