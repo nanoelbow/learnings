@@ -1,0 +1,14 @@
+{{ define "main" }}
+<h1>Learnings</h1>
+<p class="subtitle">Technical notes and things I've learned.</p>
+<div class="posts">
+    {{ range .Pages.ByDate.Reverse }}
+    <article class="post-card">
+        <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "Jan 2, 2006" }}</time>
+        {{ if .Params.tags }}<span class="tags">{{ range .Params.tags }}<span class="tag">{{ . }}</span>{{ end }}</span>{{ end }}
+        <p>{{ .Summary }}</p>
+    </article>
+    {{ end }}
+</div>
+{{ end }}

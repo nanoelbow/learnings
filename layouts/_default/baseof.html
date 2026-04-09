@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} — {{ .Site.Title }}{{ end }}</title>
+    <link rel="stylesheet" href="/learnings/css/style.css">
+    <link rel="alternate" type="application/rss+xml" title="{{ .Site.Title }} RSS" href="/learnings/index.xml">
+</head>
+<body>
+    <nav class="topnav">
+        <a href="/learnings/" class="brand">{{ .Site.Title }}</a>
+        <div class="nav-links">
+            <a href="/learnings/">Posts</a>
+            <a href="https://github.com/nanoelbow" target="_blank">GitHub</a>
+        </div>
+    </nav>
+    <main>
+        {{ block "main" . }}{{ end }}
+    </main>
+    <footer>
+        <p>Built with Hugo · <a href="https://github.com/nanoelbow/learnings">Source</a></p>
+    </footer>
+</body>
+</html>

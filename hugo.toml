@@ -1,11 +1,6 @@
 baseURL = 'https://nanoelbow.github.io/learnings/'
 languageCode = 'en-us'
 title = 'Learnings'
-theme = 'geekblog'
-
-[params]
-  subtitle = "Technical notes and things I've learned"
-  geekblogMenuBundle = true
 
 [markup]
   [markup.goldmark]
