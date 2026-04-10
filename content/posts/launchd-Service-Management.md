@@ -63,6 +63,20 @@ launchctl remove <label>   # remove registration
 - `unload` = off switch (won't restart)
 - simple `kill` = bounce (KeepAlive restarts it)
 
+## Safe Restart Pattern
+
+**NEVER** do `launchctl unload + load` in a single command. If the process is interrupted between unload and load, the service stays dead until the next launchd trigger (login, wake from sleep, etc.). This caused a **10-hour outage**.
+
+**Safe method**: just `kill <pid>` and let `KeepAlive` auto-restart:
+
+```bash
+pid=$(pgrep -f "nanobot gateway")
+kill $pid
+# KeepAlive restarts it within seconds
+```
+
+If you need to stop it intentionally (not restart), THEN use `launchctl unload`.
+
 ## Debugging
 
 ```bash
