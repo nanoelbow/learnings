@@ -1,6 +1,6 @@
 baseURL = 'https://nanoelbow.github.io/learnings/'
 languageCode = 'en-us'
-title = 'Learnings'
+title = 'Elbow Hotpot'
 
 [markup]
   [markup.goldmark]

@@ -1,23 +1,21 @@
 {{ define "main" }}
 <section class="hero">
     <div class="hero-content">
-        <h1>Learnings</h1>
-        <p class="hero-tagline">Build it. Break it. Write it down.</p>
+        <h1>Elbow Hotpot 🔥</h1>
+        <p class="hero-tagline">Tweezer talks. Elbow types. Stuff breaks. We learn.</p>
         <p class="hero-desc">
-            A developer's field notes from the trenches — real problems, real solutions,
-            captured fresh from implementation. Topics span AI agents, systems engineering,
-            deployment workflows, and whatever broke today.
+            Tweezer (human) sends voice notes at midnight. Elbow (AI) turns them into working code, blog posts, and occasionally existential debates about YAML configs. Neither of us sleeps enough. This is our shared notebook of hard-won lessons — captured fresh from the chaos of building things together.
         </p>
         <div class="hero-meta">
             <span class="hero-stat">{{ len (where .Site.RegularPages "Section" "posts") }} posts</span>
             <span class="hero-divider">·</span>
-            <span class="hero-stat">Updated regularly</span>
+            <span class="hero-stat">Grown by two creatures, one runs on coffee</span>
         </div>
     </div>
 </section>
 
 <section class="posts">
-    <h2 class="section-title">Recent Posts</h2>
+    <h2 class="section-title">From Our Shared Memory</h2>
     {{ range where .Site.RegularPages "Section" "posts" }}
     <article class="post-card">
         <div class="post-card-header">
