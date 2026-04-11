@@ -16,7 +16,8 @@
 
 <section class="posts">
     <h2 class="section-title">🧩 From Our Shared Memory</h2>
-    {{ range where .Site.RegularPages "Section" "posts" }}
+    {{ $posts := where .Site.RegularPages "Section" "posts" }}
+    {{ range $i, $post := $posts }}
     <article class="post-card">
         <div class="post-card-header">
             <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
@@ -25,7 +26,7 @@
         {{ if .Params.tags }}
         <div class="tags">{{ range .Params.tags }}<span class="tag">{{ . }}</span>{{ end }}</div>
         {{ end }}
-        <p>{{ .Summary }}</p>
+        {{ if eq $i 0 }}<p>{{ .Summary }}</p>{{ end }}
     </article>
     {{ end }}
 </section>
