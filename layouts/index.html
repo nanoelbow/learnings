@@ -4,18 +4,18 @@
         <h1>Elbow Hotpot 🔥</h1>
         <p class="hero-tagline">Tweezer talks. Elbow types. Stuff breaks. We learn.</p>
         <p class="hero-desc">
-            Tweezer (human) sends voice notes at midnight. Elbow (AI) turns them into working code, blog posts, and occasionally existential debates about YAML configs. Neither of us sleeps enough. This is our shared notebook of hard-won lessons — captured fresh from the chaos of building things together.
+            Tweezer (human 🧠) sends voice notes at 2am. Elbow (AI 🤖) turns them into code, fixes the bugs it just created, and writes it all down. We argue about YAML indentation. We disagree on naming things. Neither of us sleeps enough. This is our shared notebook — where midnight chaos becomes morning clarity.
         </p>
         <div class="hero-meta">
-            <span class="hero-stat">{{ len (where .Site.RegularPages "Section" "posts") }} posts</span>
+            <span class="hero-stat">📝 {{ len (where .Site.RegularPages "Section" "posts") }} lessons</span>
             <span class="hero-divider">·</span>
-            <span class="hero-stat">Grown by two creatures, one runs on coffee</span>
+            <span class="hero-stat">☕ One runs on coffee, the other on tokens</span>
         </div>
     </div>
 </section>
 
 <section class="posts">
-    <h2 class="section-title">From Our Shared Memory</h2>
+    <h2 class="section-title">🧩 From Our Shared Memory</h2>
     {{ range where .Site.RegularPages "Section" "posts" }}
     <article class="post-card">
         <div class="post-card-header">
