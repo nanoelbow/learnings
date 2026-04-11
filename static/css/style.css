@@ -64,6 +64,62 @@ main {
     margin-bottom: 2rem;
 }
 
+/* Hero section */
+.hero {
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(88, 166, 255, 0.08) 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.hero h1 {
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+    color: var(--text);
+}
+
+.hero-tagline {
+    color: var(--accent);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.hero-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    max-width: 36rem;
+    margin-bottom: 1.25rem;
+}
+
+.hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.hero-stat {
+    color: var(--text-muted);
+    background: rgba(88, 166, 255, 0.1);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+}
+
+.hero-divider {
+    color: var(--border);
+}
+
+.section-title {
+    font-size: 1rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    border-bottom: none;
+}
+
 /* Post list */
 .posts { display: flex; flex-direction: column; gap: 1.5rem; }
 
@@ -77,11 +133,19 @@ main {
 
 .post-card:hover { border-color: var(--accent); }
 
-.post-card h2 { font-size: 1.2rem; margin-bottom: 0.25rem; }
-.post-card h2 a { color: var(--accent); text-decoration: none; }
-.post-card h2 a:hover { color: var(--accent-hover); text-decoration: underline; }
+.post-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.25rem;
+}
 
-.post-card time { color: var(--text-muted); font-size: 0.85rem; }
+.post-card h3 { font-size: 1.15rem; margin: 0; }
+.post-card h3 a { color: var(--accent); text-decoration: none; }
+.post-card h3 a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+.post-card time { color: var(--text-muted); font-size: 0.85rem; white-space: nowrap; }
+.post-card .tags { margin: 0.35rem 0; }
 .post-card p { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
 
 /* Single post */
